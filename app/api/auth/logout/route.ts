@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     // Clear all authentication cookies
     response.cookies.delete('pnl_user_id');
     response.cookies.delete('pnl_store_id');
+    response.cookies.delete('pnl_store_name');
     response.cookies.delete('oauth_state');
 
     return response;

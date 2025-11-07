@@ -178,6 +178,14 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
 
+    response.cookies.set('pnl_store_name', storeName, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    });
+
     console.log('[OAuth Callback] Cookies set successfully');
     return response;
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/session';
+import { cookies } from 'next/headers';
 
 /**
  * Checks authentication status
@@ -7,22 +7,26 @@ import { getCurrentUser } from '@/lib/auth/session';
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const cookieStore = cookies();
+    const userId = cookieStore.get('pnl_user_id')?.value;
+    const storeId = cookieStore.get('pnl_store_id')?.value;
 
-    if (!user || !user.storeId) {
+    if (!userId || !storeId) {
       return NextResponse.json({
         authenticated: false,
         user: null,
       });
     }
 
+    // Get store name from the store_name cookie if it exists
+    const storeName = request.cookies.get('pnl_store_name')?.value;
+
     return NextResponse.json({
       authenticated: true,
       user: {
-        id: user.id,
-        storeId: user.storeId,
-        storeName: user.storeName,
-        email: user.email,
+        id: userId,
+        storeId,
+        storeName: storeName || `Store ${storeId}`,
       },
     });
   } catch (error) {
