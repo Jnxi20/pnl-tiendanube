@@ -35,6 +35,42 @@ export default function Dashboard() {
   const [isUsingMockData, setIsUsingMockData] = useState(true);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncMessage, setSyncMessage] = useState<string>('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{ storeName?: string } | null>(null);
+
+  // Check authentication status
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/status');
+      const data = await response.json();
+
+      setIsAuthenticated(data.authenticated);
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error('Auth status check failed:', err);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (response.ok) {
+        setIsAuthenticated(false);
+        setUser(null);
+        setSales(mockSales);
+        setIsUsingMockData(true);
+        setSyncMessage('Desconectado de Tienda Nube');
+        setTimeout(() => setSyncMessage(''), 3000);
+      }
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
 
   // Check if sync is needed
   const shouldSync = () => {
@@ -130,6 +166,7 @@ export default function Dashboard() {
 
   // Initial load
   useEffect(() => {
+    checkAuthStatus();
     fetchOrders();
   }, []);
 
@@ -153,38 +190,51 @@ export default function Dashboard() {
               <p className="text-sm text-gray-600 mt-1">
                 Análisis de Profit & Loss de tu Tienda Nube
               </p>
+              {isAuthenticated && user?.storeName && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Conectado: {user.storeName}
+                  </div>
+                </div>
+              )}
               {lastSyncTime && (
-                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
                   <Clock className="w-3 h-3" />
                   Última sincronización: {lastSyncTime.toLocaleString('es-AR')}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => performSync()}
-                disabled={isSyncing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  isSyncing
-                    ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
-              </button>
-              <button
-                onClick={() => window.location.href = '/api/auth/signin'}
-                className="btn-secondary"
-              >
-                Exportar Reporte
-              </button>
-              <button
-                onClick={() => window.location.href = '/api/auth/tiendanube'}
-                className="btn-primary"
-              >
-                Conectar Tienda Nube
-              </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => performSync()}
+                  disabled={isSyncing}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    isSyncing
+                      ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+                </button>
+              )}
+              {isAuthenticated ? (
+                <button
+                  onClick={handleLogout}
+                  className="btn-secondary"
+                >
+                  Desconectar Tienda
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.location.href = '/api/auth/tiendanube'}
+                  className="btn-primary"
+                >
+                  Conectar Tienda Nube
+                </button>
+              )}
             </div>
           </div>
         </div>

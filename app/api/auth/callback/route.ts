@@ -43,12 +43,16 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange authorization code for access token
+    console.log('[OAuth Callback] Exchanging code for token...');
     const tokenResponse = await exchangeCodeForToken(code);
+    console.log('[OAuth Callback] Token exchange successful');
 
     const { access_token, user_id } = tokenResponse;
     const storeId = user_id.toString();
+    console.log('[OAuth Callback] Store ID:', storeId);
 
     // Get store information using direct API call (not through the client)
+    console.log('[OAuth Callback] Fetching store information...');
     const storeResponse = await fetch(`https://api.tiendanube.com/v1/${storeId}/store`, {
       headers: {
         'Authentication': `bearer ${access_token}`,
@@ -58,10 +62,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!storeResponse.ok) {
-      throw new Error(`Failed to fetch store info: ${storeResponse.status}`);
+      const errorText = await storeResponse.text();
+      console.error('[OAuth Callback] Store info fetch failed:', storeResponse.status, errorText);
+      throw new Error(`Failed to fetch store info: ${storeResponse.status} - ${errorText}`);
     }
 
     const storeInfo = await storeResponse.json();
+    console.log('[OAuth Callback] Store info retrieved:', storeInfo.name);
 
     // Use the actual store ID from the response
     const actualStoreId = storeInfo.id?.toString() || storeId;
@@ -75,6 +82,7 @@ export async function GET(request: NextRequest) {
     const encryptedToken = encryptToken(access_token);
 
     // Create or update user
+    console.log('[OAuth Callback] Creating/updating user in database...');
     const user = await prisma.user.upsert({
       where: { storeId: actualStoreId },
       update: {
@@ -89,6 +97,7 @@ export async function GET(request: NextRequest) {
         name: storeName,
       },
     });
+    console.log('[OAuth Callback] User created/updated:', user.id);
 
     // Create or update account
     await prisma.account.upsert({
@@ -146,6 +155,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Redirect to onboarding page for initial setup
+    console.log('[OAuth Callback] OAuth flow complete, redirecting to onboarding');
     const response = NextResponse.redirect(new URL('/onboarding', request.url));
 
     // Clear OAuth state cookie
@@ -168,6 +178,7 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
 
+    console.log('[OAuth Callback] Cookies set successfully');
     return response;
   } catch (error) {
     console.error('OAuth callback error:', error);
