@@ -173,10 +173,16 @@ export default function Dashboard() {
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
               </button>
-              <button className="btn-secondary">
+              <button
+                onClick={() => window.location.href = '/api/auth/signin'}
+                className="btn-secondary"
+              >
                 Exportar Reporte
               </button>
-              <button className="btn-primary">
+              <button
+                onClick={() => window.location.href = '/api/auth/tiendanube'}
+                className="btn-primary"
+              >
                 Conectar Tienda Nube
               </button>
             </div>
