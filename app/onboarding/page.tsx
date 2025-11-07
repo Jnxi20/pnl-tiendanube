@@ -1,5 +1,8 @@
 'use client';
 
+// Mark page as dynamic (uses React hooks)
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';

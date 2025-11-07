@@ -1,5 +1,8 @@
 'use client';
 
+// Mark page as dynamic (uses React hooks)
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Store, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';

@@ -3,6 +3,9 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { getOrdersByUserId } from '@/lib/db/queries';
 import type { Sale } from '@/types';
 
+// Mark route as dynamic (uses cookies)
+export const dynamic = 'force-dynamic';
+
 /**
  * Gets orders for the authenticated user
  * GET /api/orders?startDate=xxx&endDate=xxx&status=xxx

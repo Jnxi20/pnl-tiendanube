@@ -1,5 +1,8 @@
 'use client';
 
+// Mark page as dynamic (uses React hooks in useEffect)
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   DollarSign,

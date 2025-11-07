@@ -1,16 +1,17 @@
+import NextAuth from 'next-auth';
 import type { NextAuthConfig } from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import prisma from '@/lib/db/client';
 import { encryptToken } from '@/lib/utils/encryption';
 
-export const authOptions: NextAuthConfig = {
+const authOptions = {
   adapter: PrismaAdapter(prisma) as any,
 
   providers: [
     {
       id: 'tiendanube',
       name: 'Tienda Nube',
-      type: 'oauth',
+      type: 'oauth' as const,
 
       authorization: {
         url: 'https://www.tiendanube.com/apps/authorize/token',
@@ -42,7 +43,7 @@ export const authOptions: NextAuthConfig = {
   ],
 
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
@@ -146,3 +147,5 @@ export const authOptions: NextAuthConfig = {
 
   debug: process.env.NODE_ENV === 'development',
 };
+
+export const { handlers, auth } = NextAuth(authOptions);
