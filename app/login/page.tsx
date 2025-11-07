@@ -1,128 +1,118 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Store, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages: Record<string, string> = {
-        oauth_init_failed: 'No se pudo iniciar la autenticación',
-        invalid_state: 'Error de seguridad. Por favor, intenta nuevamente',
-        missing_parameters: 'Parámetros faltantes en la respuesta',
+        missing_parameters: 'Faltan parámetros requeridos para la autenticación',
+        invalid_state: 'Error de seguridad: estado OAuth inválido',
         authentication_failed: 'Falló la autenticación con Tienda Nube',
+        oauth_error: 'Error de OAuth',
       };
-
-      setError(
-        errorMessages[errorParam] || 'Ocurrió un error durante el login'
-      );
+      setError(errorMessages[errorParam] || 'Error desconocido de autenticación');
     }
   }, [searchParams]);
 
-  const handleLogin = () => {
-    window.location.href = '/api/auth/tiendanube';
+  const handleRetry = () => {
+    router.push('/api/auth/tiendanube');
+  };
+
+  const handleGoHome = () => {
+    router.push('/');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-xl">
-              <TrendingUp className="w-8 h-8 text-white" />
-            </div>
+        <div className="bg-white shadow-lg rounded-lg p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              PNL Analytics
+            </h1>
+            <p className="text-sm text-gray-600">
+              Tienda Nube Dashboard
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            PNL Analytics
-          </h1>
-          <p className="text-gray-600">
-            Analiza la rentabilidad de tu tienda Nube
-          </p>
-        </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
+          {error ? (
+            <>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-red-900 mb-1">
+                      Error de Conexión
+                    </h3>
+                    <p className="text-sm text-red-800">
+                      {error}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={handleRetry}
+                  className="w-full btn-primary"
+                >
+                  Intentar Nuevamente
+                </button>
+                <button
+                  onClick={handleGoHome}
+                  className="w-full btn-secondary"
+                >
+                  Volver al Inicio
+                </button>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                  Posibles Soluciones:
+                </h4>
+                <ul className="text-xs text-blue-800 space-y-1">
+                  <li>• Verifica que tu URL de callback esté configurada en Tienda Nube</li>
+                  <li>• Asegúrate de tener permisos de lectura de órdenes</li>
+                  <li>• Intenta cerrar sesión y volver a conectar</li>
+                  <li>• Revisa que tus credenciales de API sean correctas</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <p className="text-gray-600 mb-4">
+                  Conecta tu tienda de Tienda Nube para comenzar a analizar tus ventas
+                </p>
+              </div>
+
+              <button
+                onClick={handleRetry}
+                className="w-full btn-primary"
+              >
+                Conectar Tienda Nube
+              </button>
+
+              <button
+                onClick={handleGoHome}
+                className="w-full btn-secondary mt-3"
+              >
+                Volver al Dashboard
+              </button>
+            </>
           )}
-
-          {/* Features */}
-          <div className="space-y-4 mb-8">
-            <div className="flex items-start gap-3">
-              <div className="bg-blue-100 p-2 rounded-lg mt-0.5">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  Análisis de Rentabilidad
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Calcula costos reales y ganancias netas
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="bg-green-100 p-2 rounded-lg mt-0.5">
-                <BarChart3 className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  Reportes Detallados
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Visualiza métricas y tendencias en tiempo real
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="bg-purple-100 p-2 rounded-lg mt-0.5">
-                <Store className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  Sincronización Automática
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Conecta con Tienda Nube sin esfuerzo
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Login Button */}
-          <button
-            onClick={handleLogin}
-            className="w-full btn-primary flex items-center justify-center gap-2 py-3 text-base font-semibold"
-          >
-            <Store className="w-5 h-5" />
-            Conectar con Tienda Nube
-          </button>
-
-          {/* Info */}
-          <p className="text-xs text-gray-500 text-center mt-6">
-            Al conectarte, autorizas a PNL Analytics a acceder a tus órdenes y
-            productos de Tienda Nube
-          </p>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-600 mt-6">
-          ¿Necesitas ayuda?{' '}
-          <a href="#" className="text-blue-600 hover:underline">
-            Contacta soporte
-          </a>
-        </p>
       </div>
     </div>
   );
