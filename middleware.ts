@@ -3,10 +3,10 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 // Paths that don't require authentication
-const publicPaths = ['/login', '/api/auth', '/api/webhooks'];
+const publicPaths = ['/', '/login', '/api/auth', '/api/webhooks'];
 
 // Paths that require authentication
-const protectedPaths = ['/', '/onboarding', '/settings'];
+const protectedPaths = ['/onboarding', '/settings'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
