@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForToken, createAPIClient } from '@/lib/api/tiendanube';
 import { encryptToken } from '@/lib/utils/encryption';
-import prisma from '@/lib/db/client';
-import { createOrUpdateSettings } from '@/lib/db/queries';
+import { getDB } from '@/lib/db/sqlite-fallback';
 
 /**
  * Handles OAuth callback from Tienda Nube
@@ -81,48 +80,29 @@ export async function GET(request: NextRequest) {
     // Encrypt access token for storage
     const encryptedToken = encryptToken(access_token);
 
-    // Create or update user
+    // Create or update user using SQLite fallback
     console.log('[OAuth Callback] Creating/updating user in database...');
-    const user = await prisma.user.upsert({
-      where: { storeId: actualStoreId },
-      update: {
-        storeName,
-        email: storeInfo.email,
-        name: storeName,
-      },
-      create: {
-        storeId: actualStoreId,
-        storeName,
-        email: storeInfo.email,
-        name: storeName,
-      },
+    const db = getDB();
+    const userId = await db.createOrUpdateUser({
+      storeId: actualStoreId,
+      storeName,
+      email: storeInfo.email,
+      name: storeName,
     });
-    console.log('[OAuth Callback] User created/updated:', user.id);
+    console.log('[OAuth Callback] User created/updated:', userId);
 
     // Create or update account
-    await prisma.account.upsert({
-      where: {
-        provider_providerAccountId: {
-          provider: 'tiendanube',
-          providerAccountId: actualStoreId,
-        },
-      },
-      update: {
-        access_token: encryptedToken,
-      },
-      create: {
-        userId: user.id,
-        type: 'oauth',
-        provider: 'tiendanube',
-        providerAccountId: actualStoreId,
-        access_token: encryptedToken,
-        token_type: 'bearer',
-        scope: tokenResponse.scope,
-      },
+    await db.createOrUpdateAccount({
+      userId,
+      provider: 'tiendanube',
+      providerAccountId: actualStoreId,
+      accessToken: encryptedToken,
+      tokenType: 'bearer',
+      scope: tokenResponse.scope,
     });
 
     // Create default settings
-    await createOrUpdateSettings(user.id, {
+    await db.createOrUpdateSettings(userId, {
       tiendaNubeFeePercentage: 3.0,
       defaultAdvertisingCost: 0,
       syncEnabled: true,
@@ -146,7 +126,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      await createOrUpdateSettings(user.id, {
+      await db.createOrUpdateSettings(userId, {
         webhooksRegistered: true,
       });
     } catch (webhookError) {
@@ -162,7 +142,7 @@ export async function GET(request: NextRequest) {
     response.cookies.delete('oauth_state');
 
     // Set a temporary auth cookie with the user ID
-    response.cookies.set('pnl_user_id', user.id, {
+    response.cookies.set('pnl_user_id', userId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
