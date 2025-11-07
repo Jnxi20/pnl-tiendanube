@@ -52,12 +52,12 @@ export default function OnboardingPage() {
         console.error('Onboarding error:', error);
         setStatus('error');
         setErrorMessage(
-          'Hubo un error durante la configuración. Puedes continuar igualmente.'
+          'Error durante la sincronización de datos. Por favor, vuelve a intentar el login.'
         );
 
-        // Redirect after 3 seconds even on error
+        // Redirect to login on error after 3 seconds
         setTimeout(() => {
-          router.push('/');
+          router.push('/login?error=sync_failed');
         }, 3000);
       }
     }

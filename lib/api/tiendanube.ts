@@ -343,8 +343,8 @@ export function getAuthorizationUrl(state: string): string {
   const clientId = process.env.TIENDANUBE_CLIENT_ID!;
   const redirectUri = process.env.TIENDANUBE_REDIRECT_URI!;
 
-  // Tienda Nube OAuth URL format
-  return `https://www.tiendanube.com/apps/${clientId}/authorize?state=${state}`;
+  // Tienda Nube OAuth URL format with explicit redirect_uri
+  return `https://www.tiendanube.com/apps/${clientId}/authorize?state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 }
 
 /**
