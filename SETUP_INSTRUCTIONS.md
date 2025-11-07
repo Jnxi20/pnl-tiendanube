@@ -4,6 +4,8 @@
 - ✅ Base de datos inicializada (136KB)
 - ✅ Servidor corriendo en http://localhost:3000
 - ✅ Credenciales configuradas (Client ID: 22728)
+- ✅ OAuth mejorado con logging detallado y manejo de errores
+- ✅ Funcionalidad de desconectar/reconectar implementada
 
 ## 🔧 Configuración Requerida en Tienda Nube
 
@@ -43,9 +45,18 @@ Asegúrate de que tu aplicación tenga los siguientes permisos:
 
 ### Opción B: Si ya estás conectado
 1. Abre http://localhost:3000
-2. Click en el botón **"Sincronizar"**
-3. Espera a que se importen las órdenes
-4. Verás un mensaje: "Sincronización completada: X nuevas órdenes"
+2. Verás tu nombre de tienda con un indicador verde: "Conectado: [Nombre Tienda]"
+3. Click en el botón **"Sincronizar"**
+4. Espera a que se importen las órdenes
+5. Verás un mensaje: "Sincronización completada: X nuevas órdenes"
+
+### Opción C: Desconectar y Reconectar
+Si necesitas cambiar de cuenta o resolver problemas de conexión:
+1. Abre http://localhost:3000
+2. Si estás conectado, verás el botón **"Desconectar Tienda"**
+3. Click en "Desconectar Tienda" → La sesión se cerrará
+4. Ahora verás el botón **"Conectar Tienda Nube"** de nuevo
+5. Puedes reconectar con la misma u otra cuenta de Tienda Nube
 
 ## 🐛 Solución de Problemas
 
@@ -88,8 +99,20 @@ Si algo no funciona, revisa los logs del servidor:
 # Verás mensajes como:
 [TiendaNube] Sample orders from API: [...]
 Error fetching orders: ...
-etc.
+
+# Durante el proceso OAuth verás:
+[OAuth Callback] Exchanging code for token...
+[OAuth Callback] Token exchange successful
+[OAuth Callback] Store ID: 123456
+[OAuth Callback] Fetching store information...
+[OAuth Callback] Store info retrieved: Mi Tienda
+[OAuth Callback] Creating/updating user in database...
+[OAuth Callback] User created/updated: clxxxxx
+[OAuth Callback] OAuth flow complete, redirecting to onboarding
+[OAuth Callback] Cookies set successfully
 ```
+
+**Ver los logs en tiempo real:** Los logs del OAuth aparecerán cuando hagas click en "Conectar Tienda Nube" y completes la autorización. Si hay algún error, verás exactamente en qué paso falló.
 
 ## 📝 Datos que Verás
 
