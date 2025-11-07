@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "get-token": "tsx scripts/get-access-token.ts",
+    "exchange-token": "tsx scripts/exchange-token.ts",
     "fetch-order": "tsx scripts/fetch-last-order.ts",
     "inspect-data": "tsx scripts/inspect-api-data.ts",
     "analyze-orders": "tsx scripts/analyze-tiendanube-orders.ts",
