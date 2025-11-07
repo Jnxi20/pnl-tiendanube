@@ -130,28 +130,56 @@ GET /api/auth/status 200 in 459ms
 
 1. **Prisma Still Used:** The OAuth callback, orders sync, and other endpoints still use Prisma for database operations. Only the authentication **status check** was changed to use cookies.
 
-2. **Offline Environment:** This fix allows authentication to work even when Prisma client cannot be generated due to network restrictions.
+2. **CRITICAL - Offline Environment Limitation:**
+   - Prisma client **CANNOT** be generated in this offline environment (403 Forbidden when downloading binaries)
+   - This means **OAuth will NOT work** because the callback requires Prisma to save user data
+   - The `/api/auth/callback` endpoint will fail with `authentication_failed` error
+   - To use OAuth, you need an environment with internet access to download Prisma binaries
 
 3. **Security:** Cookies are HTTP-only, secure in production, and have a 30-day expiration.
 
 4. **Session Persistence:** User stays logged in across page refreshes as long as cookies are valid.
 
-## User Experience After Fix
+## What Works ✅
 
-When you load http://localhost:3000:
+1. **Dashboard loads correctly** - No more infinite redirect to /login
+2. **Mock data displays** - Can see example PNL calculations
+3. **UI is responsive** - All buttons and components render
+4. **Auth status endpoint works** - Returns proper JSON (200 OK)
+5. **Login error page** - Shows OAuth errors gracefully
 
-- ✅ **If authenticated:** Shows store name with green indicator + "Desconectar Tienda" button
-- ✅ **If not authenticated:** Shows "Conectar Tienda Nube" button
-- ✅ **After disconnect:** Immediately switches to "Conectar Tienda Nube" button
-- ✅ **No more 500 errors** on status endpoint
+## What Doesn't Work ❌ (Offline Environment Only)
 
-## Next Steps for Full OAuth Test
+1. **OAuth Connection** - Fails because Prisma can't initialize
+2. **Real data sync** - Requires database which needs Prisma
+3. **User persistence** - Can't save users without database
 
-1. **Hard refresh your browser** (Ctrl+Shift+R or Cmd+Shift+R)
-2. Click "Conectar Tienda Nube"
-3. Complete OAuth authorization
-4. You should see your store name in the header
-5. Test the "Desconectar Tienda" button
-6. Reconnect to verify it works
+## Testing the Fixes
 
-The disconnect button should now be visible and fully functional!
+### Test 1: Homepage Loads
+```bash
+curl -s http://localhost:3000 | grep "Conectar Tienda Nube"
+# Should return: <button class="btn-primary">Conectar Tienda Nube</button>
+```
+
+### Test 2: Auth Status Works
+```bash
+curl -s http://localhost:3000/api/auth/status
+# Should return: {"authenticated":false,"user":null}
+```
+
+### Test 3: Dashboard in Browser
+1. Open http://localhost:3000
+2. Should see dashboard with mock data
+3. Should see "Conectar Tienda Nube" button in header
+4. No errors in browser console
+
+## To Make OAuth Work
+
+You need an environment where Prisma can download binaries:
+
+1. **Production deployment** (Vercel, Railway, etc.) - Has internet access
+2. **Local development with internet** - Can run `npx prisma generate`
+3. **Docker container with pre-built Prisma** - Binaries included in image
+
+Current offline development environment can only show the **UI and mock data**.
