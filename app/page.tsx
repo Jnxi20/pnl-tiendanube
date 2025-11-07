@@ -8,7 +8,9 @@ import {
   Percent,
   BarChart3,
   LineChart as LineChartIcon,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
 import PeriodFilter from '@/components/PeriodFilter';
@@ -19,64 +21,115 @@ import { mockSales } from '@/lib/mockData';
 import { calculateDashboardMetrics, prepareChartData, formatCurrency, formatPercentage } from '@/lib/calculations';
 import type { Sale } from '@/types';
 
+// Constants for sync behavior
+const SYNC_INTERVAL_MINUTES = 60; // Only sync if last sync was >60 minutes ago
+const STORAGE_KEY_LAST_SYNC = 'pnl_last_sync_time';
+
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [sales, setSales] = useState<Sale[]>(mockSales);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUsingMockData, setIsUsingMockData] = useState(true);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string>('');
+
+  // Check if sync is needed
+  const shouldSync = () => {
+    if (typeof window === 'undefined') return false;
+
+    const lastSync = localStorage.getItem(STORAGE_KEY_LAST_SYNC);
+    if (!lastSync) return true;
+
+    const lastSyncTime = new Date(lastSync);
+    const now = new Date();
+    const minutesSinceSync = (now.getTime() - lastSyncTime.getTime()) / (1000 * 60);
+
+    return minutesSinceSync >= SYNC_INTERVAL_MINUTES;
+  };
+
+  // Perform sync
+  const performSync = async () => {
+    setIsSyncing(true);
+    setSyncMessage('Sincronizando órdenes...');
+
+    try {
+      const syncResponse = await fetch('/api/orders/sync', {
+        method: 'POST',
+      });
+
+      if (syncResponse.ok) {
+        const syncPayload = await syncResponse.json();
+        setSyncMessage(`Sincronización completada: ${syncPayload.imported || 0} nuevas órdenes`);
+        localStorage.setItem(STORAGE_KEY_LAST_SYNC, new Date().toISOString());
+        setLastSyncTime(new Date());
+
+        // Refresh orders after sync
+        await fetchOrders(true);
+      } else {
+        const errorPayload = await syncResponse.json().catch(() => null);
+        setSyncMessage('Error al sincronizar, usando datos en caché');
+        console.warn('Background sync failed', errorPayload);
+      }
+    } catch (syncError) {
+      setSyncMessage('No se pudo conectar para sincronizar');
+      console.warn('Unable to trigger background sync', syncError);
+    } finally {
+      setIsSyncing(false);
+      // Clear sync message after 3 seconds
+      setTimeout(() => setSyncMessage(''), 3000);
+    }
+  };
 
   // Fetch real orders from API
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        setIsLoading(true);
+  const fetchOrders = async (skipSync = false) => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        // Trigger background sync before fetching data
-        try {
-          const syncResponse = await fetch('/api/orders/sync', {
-            method: 'POST',
-          });
+      // Only sync if needed and not skipped
+      if (!skipSync && shouldSync()) {
+        await performSync();
+        return; // performSync will call fetchOrders again
+      }
 
-          if (!syncResponse.ok) {
-            const errorPayload = await syncResponse.json().catch(() => null);
-            console.warn('Background sync failed', errorPayload);
-          } else {
-            const syncPayload = await syncResponse.json().catch(() => null);
-            console.log('Background sync result', syncPayload);
-          }
-        } catch (syncError) {
-          console.warn('Unable to trigger background sync', syncError);
-        }
+      const response = await fetch('/api/orders');
 
-        const response = await fetch('/api/orders');
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch orders');
-        }
+      const data = await response.json();
 
-        const data = await response.json();
+      // Restore last sync time from localStorage
+      const lastSync = localStorage.getItem(STORAGE_KEY_LAST_SYNC);
+      if (lastSync) {
+        setLastSyncTime(new Date(lastSync));
+      }
 
-        if (data.success && data.orders && data.orders.length > 0) {
-          setSales(data.orders);
-          setIsUsingMockData(false);
-        } else {
-          // No orders found, use mock data
-          setSales(mockSales);
-          setIsUsingMockData(true);
-        }
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        // Fall back to mock data on error
+      if (data.success && data.orders && data.orders.length > 0) {
+        setSales(data.orders);
+        setIsUsingMockData(false);
+      } else {
+        // No orders found, use mock data
         setSales(mockSales);
         setIsUsingMockData(true);
-      } finally {
-        setIsLoading(false);
       }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      // Fall back to mock data on error
+      setSales(mockSales);
+      setIsUsingMockData(true);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  // Initial load
+  useEffect(() => {
     fetchOrders();
   }, []);
 
@@ -100,8 +153,26 @@ export default function Dashboard() {
               <p className="text-sm text-gray-600 mt-1">
                 Análisis de Profit & Loss de tu Tienda Nube
               </p>
+              {lastSyncTime && (
+                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                  <Clock className="w-3 h-3" />
+                  Última sincronización: {lastSyncTime.toLocaleString('es-AR')}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => performSync()}
+                disabled={isSyncing}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  isSyncing
+                    ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
               <button className="btn-secondary">
                 Exportar Reporte
               </button>
@@ -201,6 +272,18 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Sync Status Message */}
+        {syncMessage && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Loader2 className="w-5 h-5 text-yellow-600 animate-spin" />
+              <div>
+                <p className="text-sm text-yellow-800">{syncMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Info Box */}
         {isUsingMockData && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
@@ -212,10 +295,13 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">
                   📊 Datos de Prueba
                 </h3>
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-blue-800 mb-2">
                   {error
                     ? `No se pudieron cargar las órdenes reales: ${error}. Mostrando datos de ejemplo.`
                     : 'No se encontraron órdenes sincronizadas. Mostrando datos de ejemplo.'}
+                </p>
+                <p className="text-xs text-blue-700">
+                  Haz clic en el botón "Sincronizar" en la parte superior para traer tus datos reales de Tienda Nube.
                 </p>
               </div>
             </div>
@@ -235,6 +321,11 @@ export default function Dashboard() {
                 <p className="text-sm text-green-800">
                   Mostrando {sales.length} órdenes sincronizadas desde tu Tienda Nube.
                 </p>
+                {lastSyncTime && (
+                  <p className="text-xs text-green-700 mt-1">
+                    Última actualización: {lastSyncTime.toLocaleString('es-AR')}
+                  </p>
+                )}
               </div>
             </div>
           </div>
