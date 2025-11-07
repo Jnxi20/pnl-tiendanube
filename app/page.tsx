@@ -179,7 +179,10 @@ export default function Dashboard() {
               <button className="btn-secondary">
                 Exportar Reporte
               </button>
-              <button className="btn-primary">
+              <button
+                onClick={() => window.location.href = '/login'}
+                className="btn-primary"
+              >
                 Conectar Tienda Nube
               </button>
             </div>
