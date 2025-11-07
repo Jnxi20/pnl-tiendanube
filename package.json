@@ -10,6 +10,7 @@
     "get-token": "tsx scripts/get-access-token.ts",
     "exchange-token": "tsx scripts/exchange-token.ts",
     "debug-oauth": "tsx scripts/debug-oauth.ts",
+    "find-token": "tsx scripts/find-token-in-db.ts",
     "test-api": "tsx scripts/test-direct-api.ts",
     "fetch-order": "tsx scripts/fetch-last-order.ts",
     "inspect-data": "tsx scripts/inspect-api-data.ts",
