@@ -1,0 +1,103 @@
+# Instrucciones de Configuración - PNL Tienda Nube
+
+## ✅ Estado Actual
+- ✅ Base de datos inicializada (136KB)
+- ✅ Servidor corriendo en http://localhost:3000
+- ✅ Credenciales configuradas (Client ID: 22728)
+
+## 🔧 Configuración Requerida en Tienda Nube
+
+### 1. Configurar Redirect URI en el Panel de Desarrolladores
+
+Debes ir al panel de desarrolladores de Tienda Nube y agregar la siguiente URL de redirección:
+
+**URL a agregar:**
+```
+http://localhost:3000/api/auth/callback
+```
+
+**Pasos:**
+1. Ve a https://partners.tiendanube.com
+2. Inicia sesión con tu cuenta de Partner
+3. Ve a "Mis Aplicaciones" o "My Apps"
+4. Busca tu aplicación (Client ID: 22728)
+5. En la sección de "URLs de Redirección" o "Redirect URIs", agrega:
+   - `http://localhost:3000/api/auth/callback`
+6. Guarda los cambios
+
+### 2. Verificar Permisos de la App
+
+Asegúrate de que tu aplicación tenga los siguientes permisos:
+- ✅ `read_orders` - Para leer las órdenes
+- ✅ `read_products` - Para leer productos
+- ✅ `write_products` - Para actualizar productos (opcional)
+
+## 🚀 Cómo Probar la Conexión
+
+### Opción A: Conectar Tienda Nube (Primera vez)
+1. Abre http://localhost:3000
+2. Click en el botón **"Conectar Tienda Nube"**
+3. Serás redirigido a Tienda Nube para autorizar
+4. Después de autorizar, volverás a la app
+5. Deberías ver tu nombre de tienda en el header
+
+### Opción B: Si ya estás conectado
+1. Abre http://localhost:3000
+2. Click en el botón **"Sincronizar"**
+3. Espera a que se importen las órdenes
+4. Verás un mensaje: "Sincronización completada: X nuevas órdenes"
+
+## 🐛 Solución de Problemas
+
+### Error: "Redirect URI mismatch"
+**Causa:** La URL de callback no está configurada en Tienda Nube
+**Solución:** Sigue el paso 1 arriba
+
+### Error: "Invalid client credentials"
+**Causa:** El Client ID o Secret son incorrectos
+**Solución:** Verifica que sean:
+- Client ID: `22728`
+- Client Secret: `0bb6feee8749e3e0cb0fb6ae5dcdf167292f24a068c75326`
+
+### Error: "Not authenticated" al sincronizar
+**Causa:** No estás autenticado
+**Solución:** Primero haz click en "Conectar Tienda Nube"
+
+### El botón no hace nada
+**Causa:** Error de JavaScript en el navegador
+**Solución:** Abre la consola del navegador (F12) y mira los errores
+
+## 📊 Ver Datos Reales
+
+Una vez conectado y sincronizado:
+1. Verás tus órdenes reales en la tabla
+2. Click en cualquier orden para ver el **desglose completo**:
+   - Venta Bruta
+   - Comisión Tienda Nube
+   - Comisión Gateway (incluye cuotas sin interés)
+   - Costo de Envío
+   - Costo de Productos (COGS)
+   - Publicidad
+   - Ganancia Neta y Margen %
+
+## 🔍 Logs para Debugging
+
+Si algo no funciona, revisa los logs del servidor:
+```bash
+# En la terminal donde corre npm run dev
+# Verás mensajes como:
+[TiendaNube] Sample orders from API: [...]
+Error fetching orders: ...
+etc.
+```
+
+## 📝 Datos que Verás
+
+La app muestra **todos** los datos financieros de Tienda Nube:
+- `grossRevenue` - Total de la venta
+- `tiendaNubeFee` - Comisión Tienda Nube (5.31% por defecto)
+- `paymentFee` - Comisión del gateway (`gateway_fee` + `installments_cost`)
+- `shippingCost` - Costo real de envío (`shipping_cost_owner`)
+- `productCost` - COGS (`products[].cost`)
+- `netRevenue` - Ganancia neta
+- `netMargin` - Margen porcentual

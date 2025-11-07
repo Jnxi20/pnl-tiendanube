@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Old nested project
 magsnap-pnl-dashboard/
+*.db
+setup-db.mjs
+create-tables.sql
+init-db.js
